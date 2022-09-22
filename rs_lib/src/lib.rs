@@ -8,22 +8,35 @@ pub fn add(a: i32, b: i32) -> i32 {
 }
 
 #[wasm_bindgen]
-pub fn encode(s: &str) -> js_sys::Uint8Array {
-  let qr = QrCode::encode_text(s, QrCodeEcc::Low).unwrap();
+pub struct QrContainer {
+  pub size: i32,
+  memory: Vec<u8>,
+}
 
-  let size = qr.size();
-  let length = size.pow(2);
-  let mut memory = Vec::with_capacity(length as usize);
-  for y in 0..size {
-    for x in 0..size {
-      memory.push(if qr.get_module(x, y) {
-        1 as u8
-      } else {
-        0 as u8
-      });
+#[wasm_bindgen]
+impl QrContainer {
+
+  pub fn new(s: &str) -> QrContainer {
+    let qr = QrCode::encode_text(s, QrCodeEcc::Low).unwrap();
+
+    let size = qr.size();
+    let length = size.pow(2);
+    let mut memory = Vec::with_capacity(length as usize);
+    for y in 0..size {
+      for x in 0..size {
+        memory.push(if qr.get_module(x, y) {
+          1 as u8
+        } else {
+          0 as u8
+        });
+      }
     }
+    return QrContainer { size, memory };
   }
-  return js_sys::Uint8Array::from(&memory[..]);
+
+  pub fn read(&self) -> js_sys::Uint8Array {
+    return js_sys::Uint8Array::from(&self.memory[..]);
+  }
 }
 
 #[cfg(test)]
